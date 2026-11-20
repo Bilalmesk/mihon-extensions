@@ -12,8 +12,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DIST = ROOT / "dist"
-VERSION = "1.6.1"
-VERSION_CODE = 1
+VERSION = "1.6.2"
+VERSION_CODE = 2
 
 MODULES = [
     {

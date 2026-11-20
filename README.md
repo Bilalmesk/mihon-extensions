@@ -57,7 +57,7 @@ The result is written to `dist/`:
 
 - `index.min.json`
 - `repo.json`
-- `apk/<package>-v1.6.1.apk`
+- `apk/<package>-v1.6.2.apk`
 - `icon/<package>.png`
 
 ## Publish the repository branch
