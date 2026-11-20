@@ -157,7 +157,8 @@ class UniManga : HttpSource() {
             val number = row.attr("data-num").toFloatOrNull() ?: 0f
             val name = link.select("span")
                 .map { it.text().trim() }
-                .firstOrNull { it.startsWith("الفصل") }
+                .filter { it.startsWith("الفصل") }
+                .minByOrNull { it.length }
                 ?: "الفصل $number"
 
             SChapter.create().apply {
