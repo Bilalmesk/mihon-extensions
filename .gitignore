@@ -1,0 +1,12 @@
+.gradle/
+build/
+local.properties
+mihon.keystore
+keystore.properties
+dist/
+.idea/
+*.iml
+.DS_Store
+__pycache__/
+*.pyc
+build-test.log
