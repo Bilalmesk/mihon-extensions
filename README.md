@@ -23,6 +23,18 @@ All sources use extension API `1.6` (Mihon 0.19+/Tachiyomi 1.6 style suspend API
 
 Direct APKs are in the `repo` branch under `apk/`.
 
+> **Upgrading from 1.6.2 or earlier:** 1.6.3 is signed with a new key.
+> Uninstall the old extensions before installing 1.6.3, otherwise Android
+> will reject the update with a signature mismatch.
+
+## Changelog
+
+### 1.6.3
+
+- MangaArabi: load the complete reader page list. The site only
+  server-renders the first 4 pages, so chapters used to stop at page 4.
+- New signing key (see the upgrade note above).
+
 ## Build
 
 Requirements:
