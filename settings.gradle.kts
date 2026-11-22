@@ -19,4 +19,5 @@ rootProject.name = "mihon-extensions"
 
 include(":extensions:unimanga")
 include(":extensions:mangarabi")
+include(":extensions:mangarabia")
 include(":extensions:mangacool")

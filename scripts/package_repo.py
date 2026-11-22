@@ -33,6 +33,15 @@ MODULES = [
         "code": 3,
     },
     {
+        "module": "mangarabia",
+        "pkg": "eu.kanade.tachiyomi.extension.ar.mangarabia",
+        "name": "MangaArabia",
+        "base_url": "https://mangarabia.com",
+        "source_id": 8283840404796410502,
+        "version": "1.6.3",
+        "code": 3,
+    },
+    {
         "module": "mangacool",
         "pkg": "eu.kanade.tachiyomi.extension.ar.mangacool",
         "name": "MangaCool",

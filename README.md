@@ -1,11 +1,12 @@
 # Mihon / Tachiyomi Arabic extensions
 
-Three Arabic manga sources packaged as Mihon/Tachiyomi extensions:
+Four Arabic manga sources packaged as Mihon/Tachiyomi extensions:
 
 | Source | Website | Package |
 | --- | --- | --- |
 | UniManga | https://unimanga.net | `eu.kanade.tachiyomi.extension.ar.unimanga` |
 | MangaArabi | https://mangarabi.com | `eu.kanade.tachiyomi.extension.ar.mangarabi` |
+| MangaArabia | https://mangarabia.com | `eu.kanade.tachiyomi.extension.ar.mangarabia` |
 | MangaCool | https://mangacool.net | `eu.kanade.tachiyomi.extension.ar.mangacool` |
 
 All sources use extension API `1.6` (Mihon 0.19+/Tachiyomi 1.6 style suspend API).
@@ -19,7 +20,7 @@ All sources use extension API `1.6` (Mihon 0.19+/Tachiyomi 1.6 style suspend API
    https://raw.githubusercontent.com/Bilalmesk/mihon-extensions/repo/index.min.json
    ```
 
-3. Open **Browse → Extensions**, refresh, and install the three sources.
+3. Open **Browse → Extensions**, refresh, and install the four sources.
 
 Direct APKs are in the `repo` branch under `apk/`.
 
@@ -33,6 +34,7 @@ Direct APKs are in the `repo` branch under `apk/`.
 
 - MangaArabi: load the complete reader page list. The site only
   server-renders the first 4 pages, so chapters used to stop at page 4.
+- Added MangaArabia (`mangarabia.com`), a separate Arabic manhwa catalog.
 - New signing key (see the upgrade note above).
 
 ## Build
@@ -47,6 +49,7 @@ Requirements:
 gradle -g /path/to/gradle-home \
   :extensions:unimanga:assembleRelease \
   :extensions:mangarabi:assembleRelease \
+  :extensions:mangarabia:assembleRelease \
   :extensions:mangacool:assembleRelease
 ```
 
