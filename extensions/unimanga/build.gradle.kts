@@ -13,8 +13,8 @@ android {
         applicationId = "eu.kanade.tachiyomi.extension.ar.unimanga"
         minSdk = 23
         targetSdk = 35
-        versionCode = 2
-        versionName = "1.6.2"
+        versionCode = 3
+        versionName = "1.6.3"
     }
 
     buildTypes {

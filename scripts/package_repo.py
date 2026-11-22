@@ -20,8 +20,8 @@ MODULES = [
         "name": "UniManga",
         "base_url": "https://unimanga.net",
         "source_id": 5514574523778303112,
-        "version": "1.6.2",
-        "code": 2,
+        "version": "1.6.3",
+        "code": 3,
     },
     {
         "module": "mangarabi",
@@ -38,8 +38,8 @@ MODULES = [
         "name": "MangaCool",
         "base_url": "https://mangacool.net",
         "source_id": 2075092417212105666,
-        "version": "1.6.2",
-        "code": 2,
+        "version": "1.6.3",
+        "code": 3,
     },
 ]
 
