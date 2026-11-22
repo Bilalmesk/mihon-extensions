@@ -12,8 +12,6 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DIST = ROOT / "dist"
-VERSION = "1.6.2"
-VERSION_CODE = 2
 
 MODULES = [
     {
@@ -22,6 +20,8 @@ MODULES = [
         "name": "UniManga",
         "base_url": "https://unimanga.net",
         "source_id": 5514574523778303112,
+        "version": "1.6.2",
+        "code": 2,
     },
     {
         "module": "mangarabi",
@@ -29,6 +29,8 @@ MODULES = [
         "name": "MangaArabi",
         "base_url": "https://mangarabi.com",
         "source_id": 5119676554409942197,
+        "version": "1.6.3",
+        "code": 3,
     },
     {
         "module": "mangacool",
@@ -36,6 +38,8 @@ MODULES = [
         "name": "MangaCool",
         "base_url": "https://mangacool.net",
         "source_id": 2075092417212105666,
+        "version": "1.6.2",
+        "code": 2,
     },
 ]
 
@@ -128,7 +132,7 @@ def main() -> int:
             raise SystemExit(f"Could not read certificate fingerprint from {signed}")
         fingerprint = match.group(1).replace(":", "").lower()
 
-        apk_name = f"{module['pkg']}-v{VERSION}.apk"
+        apk_name = f"{module['pkg']}-v{module['version']}.apk"
         shutil.copy2(signed, apk_dir / apk_name)
 
         icon_source = ROOT / "artwork" / f"{module['module']}.png"
@@ -142,8 +146,8 @@ def main() -> int:
                 "pkg": module["pkg"],
                 "apk": apk_name,
                 "lang": "ar",
-                "code": VERSION_CODE,
-                "version": VERSION,
+                "code": module["code"],
+                "version": module["version"],
                 "nsfw": 0,
                 "sources": [
                     {

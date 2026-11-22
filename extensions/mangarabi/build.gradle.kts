@@ -13,8 +13,8 @@ android {
         applicationId = "eu.kanade.tachiyomi.extension.ar.mangarabi"
         minSdk = 23
         targetSdk = 35
-        versionCode = 2
-        versionName = "1.6.2"
+        versionCode = 3
+        versionName = "1.6.3"
     }
 
     buildTypes {
@@ -51,6 +51,7 @@ kotlin {
 dependencies {
     compileOnly("com.github.keiyoushi:extensions-lib:42255ee5fa")
     compileOnly("com.squareup.okhttp3:okhttp:5.4.0")
+    compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
     compileOnly("org.jsoup:jsoup:1.22.2")
     compileOnly("org.jspecify:jspecify:1.0.0")
 }

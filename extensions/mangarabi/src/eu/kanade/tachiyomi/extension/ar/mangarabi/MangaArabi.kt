@@ -9,7 +9,12 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.model.SMangaUpdate
 import eu.kanade.tachiyomi.source.online.HttpSource
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 import okhttp3.Headers
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
 import org.jsoup.Jsoup
@@ -26,6 +31,7 @@ class MangaArabi : HttpSource() {
 
     private val apiUrl = "https://api.mangarabi.com/api/v1"
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+    private val textMediaType = "text/plain;charset=UTF-8".toMediaType()
 
     private val apiHeaders: Headers by lazy {
         headers.newBuilder()
@@ -33,6 +39,28 @@ class MangaArabi : HttpSource() {
             .add("Referer", "$baseUrl/")
             .build()
     }
+
+    // The reader is a Next.js client component. Only the first 4 pages are
+    // server-rendered; the rest are produced by these server actions.
+    private data class ReaderActions(
+        val start: String,
+        val status: String,
+        val refresh: String,
+    )
+
+    private val defaultReaderActions = ReaderActions(
+        start = "4043df9a364067ee6d8f45a4c50cfb94b5837553d2",
+        status = "40504d79d6b905c30e825a7cd81cf777518c4964a3",
+        refresh = "40bc538c2d6a940b36b10b9238ba627408bf089eb6",
+    )
+
+    @Volatile
+    private var readerActions: ReaderActions? = null
+
+    private val readerActionRegex = Regex(
+        """createServerReference\)?\("([0-9a-f]{20,})"[^)]{0,400}?"(\w+Action)"\)""",
+    )
+    private val chapterIdRegex = Regex("\"chapterId\"\\s*:\\s*\"([^\"]+)\"")
 
     override suspend fun getPopularManga(page: Int): MangasPage {
         val body = get("$apiUrl/series?sort=popular&per_page=20&page=$page", apiHeaders)
@@ -74,8 +102,27 @@ class MangaArabi : HttpSource() {
     }
 
     override suspend fun getPageList(chapter: SChapter): List<Page> {
-        val body = get(baseUrl + chapter.url)
-        val doc = Jsoup.parse(body, baseUrl)
+        val pageUrl = baseUrl + chapter.url
+        val html = get(pageUrl)
+        val htmlPages = parseHtmlPages(html)
+        val chapterId = extractChapterId(html) ?: return htmlPages
+
+        return try {
+            fetchReaderPages(pageUrl, html, chapterId).ifEmpty { htmlPages }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            htmlPages
+        }
+    }
+
+    private fun extractChapterId(html: String): String? {
+        val normalized = html.replace("\\\"", "\"")
+        return chapterIdRegex.find(normalized)?.groupValues?.get(1)?.takeIf { it.isNotBlank() }
+    }
+
+    private fun parseHtmlPages(html: String): List<Page> {
+        val doc = Jsoup.parse(html, baseUrl)
 
         var images = doc.select("div[data-reader-page] img[src]")
         if (images.isEmpty()) {
@@ -85,6 +132,148 @@ class MangaArabi : HttpSource() {
         return images.mapIndexedNotNull { index, img ->
             val url = img.absUrl("src").ifBlank { img.attr("src") }
             if (url.isBlank()) null else Page(index, "", url)
+        }
+    }
+
+    private suspend fun fetchReaderPages(pageUrl: String, html: String, chapterId: String): List<Page> {
+        var state = postReaderAction(pageUrl, html, "start", chapterId) ?: return emptyList()
+        var totalPages = state.optInt("total_pages", 0)
+
+        state.optJSONObject("reader")?.pages()?.takeIf { it.isNotEmpty() }?.let { return it }
+
+        var status = state.optString("status")
+        var attempts = 0
+        while (status == "cold" || status == "processing" || status == "partial_ready") {
+            if (++attempts > 90) break
+            delay(1_000)
+            state = postReaderAction(pageUrl, html, "status", chapterId) ?: break
+            totalPages = state.optInt("total_pages", totalPages)
+            status = state.optString("status")
+        }
+
+        if (status == "failed" || status == "unavailable") return emptyList()
+
+        var pages = emptyList<Page>()
+        var refreshes = 0
+        while (refreshes < 6) {
+            val reader = postReaderAction(pageUrl, html, "refresh", chapterId) ?: break
+            val newPages = reader.pages()
+            if (newPages.isNotEmpty()) pages = newPages
+            if (totalPages > 0 && pages.size >= totalPages) break
+            if (newPages.isEmpty() && refreshes >= 2) break
+            refreshes++
+            delay(1_000)
+        }
+
+        return pages
+    }
+
+    private suspend fun postReaderAction(
+        pageUrl: String,
+        html: String,
+        kind: String,
+        chapterId: String,
+    ): JSONObject? {
+        val actions = readerActions ?: defaultReaderActions
+        postAction(pageUrl, actions.forKind(kind), chapterId)?.let { return it }
+
+        // Action IDs change when the site is rebuilt. Resolve them from the
+        // reader chunks and retry once before giving up.
+        val resolved = resolveReaderActions(html) ?: return null
+        readerActions = resolved
+        return postAction(pageUrl, resolved.forKind(kind), chapterId)
+    }
+
+    private suspend fun postAction(pageUrl: String, actionId: String, chapterId: String): JSONObject? {
+        return try {
+            val request = Request.Builder()
+                .url(pageUrl)
+                .post("[\"$chapterId\"]".toRequestBody(textMediaType))
+                .headers(
+                    headers.newBuilder()
+                        .set("Accept", "text/x-component")
+                        .set("Content-Type", "text/plain;charset=UTF-8")
+                        .set("Next-Action", actionId)
+                        .set("Origin", baseUrl)
+                        .set("Referer", pageUrl)
+                        .build(),
+                )
+                .build()
+
+            client.newCall(request).await().use { response ->
+                if (!response.isSuccessful) return null
+                parseActionPayload(response.body.string())
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private fun parseActionPayload(body: String): JSONObject? {
+        val line = body.lineSequence().firstOrNull { it.startsWith("1:") } ?: return null
+        val payload = line.substring(2).trim()
+        if (!payload.startsWith("{")) return null
+        return try {
+            JSONObject(payload)
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private suspend fun resolveReaderActions(html: String): ReaderActions? {
+        val scriptUrls = Jsoup.parse(html, baseUrl)
+            .select("script[src]")
+            .mapNotNull { it.absUrl("src").takeIf(String::isNotBlank) }
+            .filter { it.startsWith(baseUrl) && it.contains("/_next/static/chunks/") }
+            .distinct()
+
+        val ids = mutableMapOf<String, String>()
+        for (url in scriptUrls) {
+            val script = try {
+                get(url)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                continue
+            }
+
+            for (match in readerActionRegex.findAll(script)) {
+                ids[match.groupValues[2]] = match.groupValues[1]
+            }
+
+            if (ids.containsKey("startChapterAction") &&
+                ids.containsKey("chapterStatusAction") &&
+                ids.containsKey("refreshReaderAction")
+            ) {
+                break
+            }
+        }
+
+        return ReaderActions(
+            start = ids["startChapterAction"] ?: return null,
+            status = ids["chapterStatusAction"] ?: return null,
+            refresh = ids["refreshReaderAction"] ?: return null,
+        )
+    }
+
+    private fun ReaderActions.forKind(kind: String): String = when (kind) {
+        "start" -> start
+        "status" -> status
+        else -> refresh
+    }
+
+    private fun JSONObject.pages(): List<Page> {
+        val array = optJSONArray("pages") ?: return emptyList()
+        return (0 until array.length()).mapNotNull { index ->
+            val item = array.optJSONObject(index) ?: return@mapNotNull null
+            val url = item.optString("url")
+            if (url.isBlank()) {
+                null
+            } else {
+                Page((item.optInt("page", index + 1) - 1).coerceAtLeast(0), "", url)
+            }
         }
     }
 
