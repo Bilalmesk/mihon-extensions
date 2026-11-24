@@ -20,8 +20,8 @@ MODULES = [
         "name": "UniManga",
         "base_url": "https://unimanga.net",
         "source_id": 5514574523778303112,
-        "version": "1.6.3",
-        "code": 3,
+        "version": "1.6.4",
+        "code": 4,
     },
     {
         "module": "mangarabi",
@@ -29,8 +29,8 @@ MODULES = [
         "name": "MangaArabi",
         "base_url": "https://mangarabi.com",
         "source_id": 5119676554409942197,
-        "version": "1.6.3",
-        "code": 3,
+        "version": "1.6.4",
+        "code": 4,
     },
     {
         "module": "mangarabia",
@@ -38,8 +38,8 @@ MODULES = [
         "name": "MangaArabia",
         "base_url": "https://mangarabia.com",
         "source_id": 8283840404796410502,
-        "version": "1.6.3",
-        "code": 3,
+        "version": "1.6.4",
+        "code": 4,
     },
     {
         "module": "mangacool",
@@ -47,8 +47,8 @@ MODULES = [
         "name": "MangaCool",
         "base_url": "https://mangacool.net",
         "source_id": 2075092417212105666,
-        "version": "1.6.3",
-        "code": 3,
+        "version": "1.6.4",
+        "code": 4,
     },
 ]
 
