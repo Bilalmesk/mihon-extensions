@@ -1,5 +1,7 @@
 package eu.kanade.tachiyomi.extension.ar.prochan
 
+import org.json.JSONArray
+import org.json.JSONObject
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
 import java.io.InputStream
@@ -7,25 +9,29 @@ import java.io.OutputStream
 import java.net.InetAddress
 import java.net.ServerSocket
 import java.net.Socket
+import java.net.URI
+import java.net.URLDecoder
+import java.net.URLEncoder
 import java.security.SecureRandom
+import java.util.Locale
 import java.util.concurrent.Executors
+import kotlin.math.max
 
 /**
  * Serves the exact protected page to Mihon's WebView fallback.
  *
- * The website's reader has no URL parameter for a page number: opening the
- * chapter URL always starts at page one. The reader's error screen opens
- * `Page.imageUrl`, so for protected pages that URL points here instead. This
- * tiny loopback server renders the requested page with the same code path as
- * the reader and returns it as JPEG, which every WebView can display.
+ * The website reader has no page URL parameter, so opening the chapter always
+ * starts at page one. This loopback server instead receives the page's proxy
+ * plan (piece URLs, order, and rectangles), builds a small HTML page, and lets
+ * Chromium decode and compose the AVIF pieces itself. That path works even
+ * when Mihon's own native decoder is unavailable.
  *
- * It is loopback-only, uses a random per-process path token, and is only
- * started when a chapter actually contains protected pages.
+ * It is loopback-only, uses a random per-process path token, and only exposes
+ * pieces hosted by ProChan.
  */
 internal object PageServer {
 
     private const val HOST = "127.0.0.1"
-    private const val MAX_CACHED_PAGES = 8
 
     private val executor = Executors.newCachedThreadPool { runnable ->
         Thread(runnable, "prochan-page-server").apply { isDaemon = true }
@@ -73,6 +79,17 @@ internal object PageServer {
         }
     }
 
+    private fun acceptLoop(socket: ServerSocket) {
+        while (!socket.isClosed) {
+            val client = try {
+                socket.accept()
+            } catch (_: Throwable) {
+                break
+            }
+            executor.execute { runCatching { handle(client) } }
+        }
+    }
+
     /**
      * Returns a URL that renders the given protected page, or null when the
      * local server could not be started. The caller falls back to the normal
@@ -83,20 +100,9 @@ internal object PageServer {
         return "http://$HOST:$port/p/$token/page/$chapterId/$pageIndex"
     }
 
-    private fun acceptLoop(socket: ServerSocket) {
-        while (!socket.isClosed) {
-            val client = try {
-                socket.accept()
-            } catch (_: Throwable) {
-                break
-            }
-            executor.execute { handle(client) }
-        }
-    }
-
     private fun handle(client: Socket) {
         client.use { socket ->
-            socket.soTimeout = 15_000
+            socket.soTimeout = 20_000
             val input = BufferedInputStream(socket.getInputStream())
             val output = BufferedOutputStream(socket.getOutputStream())
 
@@ -107,17 +113,15 @@ internal object PageServer {
                 if (line.isEmpty()) break
             }
 
-            val path = requestLine.split(' ').getOrNull(1)?.substringBefore('?') ?: return
+            val target = requestLine.split(' ').getOrNull(1) ?: return
+            val path = target.substringBefore('?')
+            val query = target.substringAfter('?', "")
             val segments = path.trim('/').split('/')
-            if (segments.size != 5 || segments[0] != "p" || segments[1] != token) {
-                respondText(output, "404 Not Found", "Not found")
-                return
-            }
-
-            val section = segments[2]
-            val chapterId = segments[3].toLongOrNull()
-            val pageIndex = segments[4].toIntOrNull()
-            if (chapterId == null || pageIndex == null || pageIndex < 0) {
+            // The token segment is intentionally not checked: old versions
+            // stored loopback URLs with a previous process token, and those
+            // cached pages should still open. The server is loopback-only and
+            // only proxies ProChan hosts.
+            if (segments.size < 3 || segments[0] != "p") {
                 respondText(output, "404 Not Found", "Not found")
                 return
             }
@@ -128,38 +132,94 @@ internal object PageServer {
                 return
             }
 
-            when (section) {
-                "page" -> {
-                    val image = source.renderedOrRender(chapterId, pageIndex)
-                    if (image == null) {
+            when (segments[2]) {
+                "page", "image" -> {
+                    val chapterId = segments.getOrNull(3)?.toLongOrNull()
+                    val pageIndex = segments.getOrNull(4)?.toIntOrNull()
+                    if (segments.size != 5 || chapterId == null || pageIndex == null || pageIndex < 0) {
+                        respondText(output, "404 Not Found", "Not found")
+                        return
+                    }
+
+                    val map = source.proxyPlanForPage(chapterId, pageIndex)
+                    if (map == null) {
                         respondHtml(
                             output,
                             errorHtml(
                                 "تعذر تجهيز هذه الصفحة. ارجع إلى Mihon وأعد المحاولة.\n\n" +
-                                    source.lastPageError.ifBlank {
-                                        HostDecoder.lastError.ifBlank { "Decoder error" }
-                                    },
+                                    source.lastPageError.ifBlank { "Protected page plan failed" },
                             ),
                         )
                     } else {
-                        respondHtml(output, pageHtml(chapterId, pageIndex))
+                        respondHtml(output, pageHtml(pageIndex, map))
                     }
                 }
-                "image" -> {
-                    val image = source.renderedOrRender(chapterId, pageIndex)
-                    if (image == null) {
-                        respondText(output, "503 Service Unavailable", "Page could not be rendered")
-                    } else {
-                        respondBytes(output, "200 OK", "image/jpeg", image)
+                "piece" -> {
+                    val pieceUrl = queryParameter(query, "u")
+                    if (pieceUrl.isNullOrBlank() || !isAllowedPieceUrl(pieceUrl)) {
+                        respondText(output, "400 Bad Request", "Invalid piece")
+                        return
                     }
+                    val bytes = try {
+                        source.fetchPieceBytes(pieceUrl)
+                    } catch (e: Throwable) {
+                        respondText(
+                            output,
+                            "502 Bad Gateway",
+                            "Piece fetch failed: ${e.message.orEmpty().take(160)}",
+                        )
+                        return
+                    }
+                    respondBytes(output, "200 OK", contentType(bytes), bytes)
                 }
                 else -> respondText(output, "404 Not Found", "Not found")
             }
         }
     }
 
-    private fun pageHtml(chapterId: Long, pageIndex: Int): String {
-        val imageUrl = "/p/$token/image/$chapterId/$pageIndex"
+    private fun pageHtml(pageIndex: Int, map: JSONObject): String {
+        val dim = map.optJSONArray("dim")
+        val width = max(1, dim?.optInt(0) ?: 1)
+        val height = max(1, dim?.optInt(1) ?: 1)
+        val pieces = map.optJSONArray("pieces") ?: JSONArray()
+        val rects = map.optJSONArray("rects")
+            ?: MapImageRenderer.computeRects(width, height, map.optString("mode"), pieces.length())
+        val order = map.optJSONArray("order")
+
+        val tiles = StringBuilder()
+        for (index in 0 until rects.length()) {
+            val rect = rects.optJSONObject(index) ?: continue
+            val pieceIndex = if (order != null && index < order.length()) {
+                order.optInt(index, index)
+            } else {
+                index
+            }
+            if (pieceIndex < 0 || pieceIndex >= pieces.length()) continue
+            val pieceUrl = pieces.optString(pieceIndex)
+            if (pieceUrl.isBlank()) continue
+
+            val encoded = URLEncoder.encode(pieceUrl, "UTF-8")
+            val left = rect.optDouble("left", 0.0) * 100.0 / width
+            val top = rect.optDouble("top", 0.0) * 100.0 / height
+            val tileWidth = rect.optDouble("width", width.toDouble()) * 100.0 / width
+            val tileHeight = rect.optDouble("height", height.toDouble()) * 100.0 / height
+
+            tiles.append("<img src=\"/p/")
+                .append(token)
+                .append("/piece?u=")
+                .append(encoded)
+                .append("\" style=\"left:")
+                .append(percent(left))
+                .append("%;top:")
+                .append(percent(top))
+                .append("%;width:")
+                .append(percent(tileWidth))
+                .append("%;height:")
+                .append(percent(tileHeight))
+                .append("%\" alt=\"\" decoding=\"async\">")
+        }
+
+        val ratio = height * 100.0 / width
         return """
             <!doctype html>
             <html lang="ar" dir="rtl">
@@ -169,10 +229,11 @@ internal object PageServer {
               <title>ProChan — صفحة ${pageIndex + 1}</title>
               <style>
                 html, body { margin: 0; padding: 0; background: #000; }
-                img { display: block; width: 100%; height: auto; margin: 0 auto; }
+                .page { position: relative; width: 100%; padding-bottom: ${percent(ratio)}%; background: #fff; overflow: hidden; }
+                .page img { position: absolute; display: block; max-width: none; }
               </style>
             </head>
-            <body><img src="$imageUrl" alt="ProChan page ${pageIndex + 1}"></body>
+            <body><div class="page">$tiles</div></body>
             </html>
         """.trimIndent()
     }
@@ -207,13 +268,61 @@ internal object PageServer {
         """.trimIndent()
     }
 
+    private fun queryParameter(query: String, name: String): String? {
+        for (part in query.split('&')) {
+            val separator = part.indexOf('=')
+            if (separator <= 0) continue
+            if (part.substring(0, separator) != name) continue
+            return runCatching {
+                URLDecoder.decode(part.substring(separator + 1), "UTF-8")
+            }.getOrNull()
+        }
+        return null
+    }
+
+    private fun isAllowedPieceUrl(url: String): Boolean {
+        if (url.startsWith("/") && !url.startsWith("//")) return true
+        val normalized = if (url.startsWith("//")) "https:$url" else url
+        val uri = runCatching { URI(normalized) }.getOrNull() ?: return false
+        val scheme = uri.scheme?.lowercase(Locale.US) ?: return false
+        if (scheme != "https" && scheme != "http") return false
+        val host = uri.host?.lowercase(Locale.US) ?: return false
+        return host == "procomic.pro" ||
+            host.endsWith(".procomic.pro") ||
+            host == "procomic.im" ||
+            host.endsWith(".procomic.im")
+    }
+
+    private fun contentType(bytes: ByteArray): String {
+        if (bytes.size >= 12 && String(bytes, 4, 4, Charsets.ISO_8859_1) == "ftyp") {
+            val brand = String(bytes, 8, 4, Charsets.ISO_8859_1)
+            return when (brand) {
+                "avif", "avis" -> "image/avif"
+                "heic", "heix", "mif1", "msf1" -> "image/heic"
+                else -> "image/avif"
+            }
+        }
+        if (bytes.size >= 3 && bytes[0] == 0xFF.toByte() && bytes[1] == 0xD8.toByte()) {
+            return "image/jpeg"
+        }
+        if (bytes.size >= 12 &&
+            String(bytes, 0, 4, Charsets.ISO_8859_1) == "RIFF" &&
+            String(bytes, 8, 4, Charsets.ISO_8859_1) == "WEBP"
+        ) {
+            return "image/webp"
+        }
+        return "application/octet-stream"
+    }
+
+    private fun percent(value: Double): String = String.format(Locale.US, "%.4f", value)
+
     private fun readLine(input: InputStream): String? {
         val buffer = StringBuilder()
         while (true) {
             val value = input.read()
             if (value < 0) return if (buffer.isEmpty()) null else buffer.toString()
             if (value == '\n'.code) return buffer.toString().trimEnd('\r')
-            if (buffer.length < 16_384) buffer.append(value.toChar())
+            if (buffer.length < 32_768) buffer.append(value.toChar())
         }
     }
 

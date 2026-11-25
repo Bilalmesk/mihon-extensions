@@ -112,9 +112,14 @@ internal object HostDecoder {
         // The outer class only has synthetic accessors, so probing it alone
         // always fails with "no matching signature".
         var companion: Any? = null
+        var lastFailure = ""
         for (fieldName in listOf("Companion", "INSTANCE")) {
-            companion = runCatching { cls.getField(fieldName).get(null) }.getOrNull()
+            val result = runCatching { cls.getField(fieldName).get(null) }
+            companion = result.getOrNull()
             if (companion != null) break
+            lastFailure = result.exceptionOrNull()?.let {
+                ((it.cause ?: it).message ?: it.javaClass.simpleName)
+            }.orEmpty()
         }
         val companionClass = companion?.javaClass
             ?: findClass("tachiyomi.decoder.ImageDecoder\$Companion")
@@ -146,6 +151,7 @@ internal object HostDecoder {
                     decoder = target.getMethod("newInstance", *signature).invoke(receiver, *args)
                     if (decoder != null) break
                 } catch (e: Throwable) {
+                    lastFailure = (e.cause ?: e).message ?: e.javaClass.simpleName
                     // Try the next signature.
                 }
             }
@@ -153,7 +159,7 @@ internal object HostDecoder {
         }
 
         if (decoder == null) {
-            errors += "tachiyomi.newInstance: no matching signature"
+            errors += "tachiyomi.newInstance: ${lastFailure.take(160).ifBlank { "no matching signature" }}"
             return null
         }
 
@@ -173,7 +179,8 @@ internal object HostDecoder {
                     val bitmap = cls.getMethod("decode", *signature).invoke(decoder, *args) as? Bitmap
                     if (bitmap != null) return bitmap
                 } catch (e: Throwable) {
-                    errors += "tachiyomi.decode: ${e.javaClass.simpleName}"
+                    val cause = (e.cause ?: e).message.orEmpty().take(80)
+                    errors += "tachiyomi.decode: ${e.javaClass.simpleName}: $cause"
                 }
             }
             return null

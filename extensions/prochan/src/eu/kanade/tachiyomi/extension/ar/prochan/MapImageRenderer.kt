@@ -99,7 +99,7 @@ internal object MapImageRenderer {
         return null
     }
 
-    private fun computeRects(width: Int, height: Int, mode: String, count: Int): JSONArray {
+    internal fun computeRects(width: Int, height: Int, mode: String, count: Int): JSONArray {
         val rects = JSONArray()
         if (mode.startsWith("grid_")) {
             val parts = mode.removePrefix("grid_").split("x")

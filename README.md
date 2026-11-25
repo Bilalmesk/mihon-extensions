@@ -37,6 +37,16 @@ Direct APKs are in the `repo` branch under `apk/`.
 
 ## Changelog
 
+### 1.6.13
+
+- ProChan: `Open in WebView` on a failed page now composes that page from
+  its AVIF pieces inside Chromium. This bypasses Mihon's image decoder
+  completely, so it works even when local decoding fails. The pieces are
+  proxied through the loopback helper with the required referrer.
+- ProChan: old cached loopback page URLs from 1.6.11/1.6.12 are still
+  accepted and redirect into the new composer.
+- ProChan: decoder failures now include the real native/reflection cause.
+
 ### 1.6.12
 
 - ProChan: start the exact-page WebView fallback when the source is created,

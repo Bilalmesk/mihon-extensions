@@ -51,14 +51,6 @@ class ProChan : HttpSource() {
     private val pageCache = ConcurrentHashMap<Long, ChapterPageData>()
     private val cdnPathCache = ConcurrentHashMap<Long, String>()
 
-    // Small LRU of pages already rendered for the reader, so the WebView
-    // fallback can show the exact page without fetching the pieces again.
-    private val renderedPages = object : LinkedHashMap<String, ByteArray>(8, 0.75f, true) {
-        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, ByteArray>?): Boolean {
-            return size > 8
-        }
-    }
-
     @Volatile
     internal var lastPageError: String = ""
 
@@ -185,7 +177,7 @@ class ProChan : HttpSource() {
         return pages
     }
 
-    internal fun renderMapPage(chapterId: Long, pageIndex: Int): ByteArray {
+    private fun loadProxyPlanMap(chapterId: Long, pageIndex: Int): JSONObject {
         val data = pageCache[chapterId] ?: loadChapterPages(chapterId, "", "", "")
         val map = data.maps.firstOrNull { it.pageIndex == pageIndex }
             ?: throw Exception("Protected page is no longer available")
@@ -199,32 +191,29 @@ class ProChan : HttpSource() {
         if (result.pass != data.pass) {
             pageCache[chapterId] = data.copy(pass = result.pass)
         }
-        val bytes = MapImageRenderer.render(api, result.map)
-        synchronized(renderedPages) {
-            renderedPages[pageKey(chapterId, pageIndex)] = bytes
-        }
-        return bytes
+        return result.map
+    }
+
+    internal fun renderMapPage(chapterId: Long, pageIndex: Int): ByteArray {
+        return MapImageRenderer.render(api, loadProxyPlanMap(chapterId, pageIndex))
     }
 
     /**
-     * Returns the rendered page for [PageServer], reusing the image the reader
-     * just decoded when possible.
+     * Returns the proxy plan for [PageServer]. The server turns the pieces
+     * into an HTML page so the WebView decodes them with Chromium's AVIF
+     * decoder, which works even when Mihon's own decoder is unavailable.
      */
-    internal fun renderedOrRender(chapterId: Long, pageIndex: Int): ByteArray? {
-        synchronized(renderedPages) {
-            renderedPages[pageKey(chapterId, pageIndex)]?.let { return it }
-        }
-
+    internal fun proxyPlanForPage(chapterId: Long, pageIndex: Int): JSONObject? {
         return try {
             lastPageError = ""
-            renderMapPage(chapterId, pageIndex)
+            loadProxyPlanMap(chapterId, pageIndex)
         } catch (e: Throwable) {
             lastPageError = e.message ?: e.javaClass.simpleName
             null
         }
     }
 
-    private fun pageKey(chapterId: Long, pageIndex: Int): String = "$chapterId:$pageIndex"
+    internal fun fetchPieceBytes(url: String): ByteArray = api.fetchPiece(url)
 
     private fun loadChapterPages(chapterId: Long, slug: String, number: String, cdnHint: String): ChapterPageData {
         val root = try {
