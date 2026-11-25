@@ -37,6 +37,14 @@ Direct APKs are in the `repo` branch under `apk/`.
 
 ## Changelog
 
+### 1.7.1
+
+- ProChan: use the reader page's own media token before the Android token,
+  and only refresh the Android token if the page token fails. This reduces
+  HTTP 403 during downloads.
+- ProChan: probe all Mihon/Tachiyomi host-decoder signatures and include the
+  failing decoder names in the error if decoding still fails.
+
 ### 1.7.0
 
 - ProChan: fixed the host decoder reflection for Mihon. Mihon's

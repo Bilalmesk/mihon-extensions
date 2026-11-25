@@ -41,7 +41,11 @@ internal object MapImageRenderer {
                 if (pieceUrl.isBlank()) continue
 
                 val piece = decode(api.fetchPiece(pieceUrl))
-                    ?: throw Exception("Could not decode the protected page image. Update Mihon, clear chapter cache, or use Open in WebView.")
+                    ?: throw Exception(
+                        "Could not decode the protected page image. " +
+                            "Update Mihon, clear chapter cache, or use Open in WebView. " +
+                            "Decoder: ${HostDecoder.lastError.take(240)}",
+                    )
                 try {
                     val dest = Rect(
                         rectObj.optInt("left", 0),

@@ -212,30 +212,46 @@ class ProChan : HttpSource() {
         val seriesSlug = series?.optString("slug").orEmpty().ifBlank { slug }
         val chapterNumber = data.optString("chapter_number").ifBlank { number }
         val cdnPath = resolveCdnPath(cdnHint, data.optString("cdn_path"), series?.optLong("id", 0L) ?: 0L)
+        val androidSplit = deferredMedia.optInt("triggerAfterImageIndex", 1).coerceAtLeast(1)
 
-        val refreshedToken = api.refreshDeferredToken(chapterId, token)
-        val deferred = try {
-            if (refreshedToken != null && refreshedToken != token) {
-                try {
-                    api.getWebDeferred(chapterId, refreshedToken, split)
-                } catch (first: ApiException) {
-                    api.getWebDeferred(chapterId, token, split)
-                }
-            } else {
-                api.getWebDeferred(chapterId, token, split)
-            }
-        } catch (e: ApiException) {
-            lockedMessage(e.body)?.let { throw Exception(it, e) }
-            throw e
+        val webInfo = try {
+            api.getWebChapterInfo(seriesSlug, chapterNumber, chapterId)
+        } catch (_: Throwable) {
+            null
         }
-        val deferredData = deferred.optJSONObject("data") ?: deferred
+
+        var deferred: JSONObject? = null
+        var deferredError: ApiException? = null
+
+        // The reader page's own token is freshest and usually works first try.
+        if (webInfo != null && webInfo.token.isNotBlank()) {
+            try {
+                deferred = api.getWebDeferred(chapterId, webInfo.token, webInfo.split)
+            } catch (e: ApiException) {
+                lockedMessage(e.body)?.let { throw Exception(it, e) }
+                deferredError = e
+            }
+        }
+
+        // Fall back to the Android app token, refreshing it only if needed.
+        if (deferred == null) {
+            try {
+                deferred = api.getWebDeferred(chapterId, token, androidSplit)
+            } catch (first: ApiException) {
+                lockedMessage(first.body)?.let { throw Exception(it, first) }
+                deferredError = first
+                val fresh = api.refreshDeferredToken(chapterId, token)
+                if (fresh != null && fresh != token) {
+                    deferred = api.getWebDeferred(chapterId, fresh, androidSplit)
+                }
+            }
+        }
+
+        val deferredRoot = deferred ?: throw (deferredError ?: Exception("Could not load chapter pages"))
+        val deferredData = deferredRoot.optJSONObject("data") ?: deferredRoot
         val pass = deferredData.optString("pass")
 
-        val appImages = try {
-            api.getAppImages(seriesSlug, chapterNumber, chapterId)
-        } catch (_: Throwable) {
-            emptyList()
-        }
+        val appImages = webInfo?.images.orEmpty()
         val publicImages = mutableListOf<String>()
         if (appImages.isNotEmpty()) {
             publicImages.addAll(appImages)

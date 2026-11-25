@@ -36,6 +36,12 @@ internal class ProxyPlanResult(
     val pass: String,
 )
 
+internal data class WebChapterInfo(
+    val images: List<String>,
+    val token: String,
+    val split: Int,
+)
+
 internal class ProChanApi(val plainClient: OkHttpClient) {
 
     private companion object {
@@ -174,12 +180,23 @@ internal class ProChanApi(val plainClient: OkHttpClient) {
     }
 
     fun getAppImages(slug: String, number: String, chapterId: Long): List<String> {
-        if (slug.isBlank() || number.isBlank()) return emptyList()
+        return getWebChapterInfo(slug, number, chapterId)?.images.orEmpty()
+    }
+
+    fun getWebChapterInfo(slug: String, number: String, chapterId: Long): WebChapterInfo? {
+        if (slug.isBlank() || number.isBlank()) return null
         val url = "$WEB_BASE/ar/chapter/$slug-$number-$chapterId"
-        plainClient.newCall(GET(url, webHeaders)).execute().use { response ->
-            val html = response.body.string()
-            if (!response.isSuccessful) return emptyList()
-            return parseAppImages(html)
+        return try {
+            plainClient.newCall(GET(url, webHeaders)).execute().use { response ->
+                if (!response.isSuccessful) return null
+                val html = response.body.string()
+                val images = parseAppImages(html)
+                val token = parseWebToken(html)
+                if (token.isBlank() && images.isEmpty()) return null
+                WebChapterInfo(images, token, parseWebSplit(html))
+            }
+        } catch (_: Throwable) {
+            null
         }
     }
 
@@ -423,6 +440,26 @@ internal class ProChanApi(val plainClient: OkHttpClient) {
             DeviceState.timeOffsetSeconds = (serverMillis / 1000) - (System.currentTimeMillis() / 1000)
         } catch (_: Throwable) {
         }
+    }
+
+    private fun parseWebToken(html: String): String {
+        val marker = "deferredMedia\\\":{\\\"token\\\":\\\""
+        val start = html.indexOf(marker)
+        if (start < 0) return ""
+        val valueStart = start + marker.length
+        val end = html.indexOf("\\\"", valueStart)
+        if (end <= valueStart) return ""
+        return html.substring(valueStart, end)
+    }
+
+    private fun parseWebSplit(html: String): Int {
+        val marker = "\\\"splitIndex\\\":"
+        val start = html.indexOf(marker)
+        if (start < 0) return 1
+        val valueStart = start + marker.length
+        var end = valueStart
+        while (end < html.length && html[end].isDigit()) end++
+        return html.substring(valueStart, end).toIntOrNull()?.takeIf { it > 0 } ?: 1
     }
 
     private fun parseAppImages(html: String): List<String> {
