@@ -37,6 +37,12 @@ Direct APKs are in the `repo` branch under `apk/`.
 
 ## Changelog
 
+### 1.6.9
+
+- ProChan: added Tachiyomi/Mihon HDR frame decoding fallbacks, platform
+  software/hardware AVIF attempts, and a real chapter URL for
+  `Open in WebView` instead of the internal `__map__` URL.
+
 ### 1.6.8
 
 - ProChan: decode protected AVIF pieces with Mihon's bundled image decoder

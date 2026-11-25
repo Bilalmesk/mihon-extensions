@@ -148,7 +148,11 @@ class ProChan : HttpSource() {
             pages.add(Page(pages.size, url, url))
         }
         data.maps.forEach { map ->
-            val url = "$baseUrl/__map__/$chapterId/${map.pageIndex}"
+            val url = if (slug.isNotBlank() && number.isNotBlank()) {
+                "$baseUrl/ar/chapter/$slug-$number-$chapterId?__map__=$chapterId:${map.pageIndex}"
+            } else {
+                "$baseUrl/__map__/$chapterId/${map.pageIndex}"
+            }
             pages.add(Page(pages.size, url, url))
         }
 
@@ -532,14 +536,25 @@ class ProChan : HttpSource() {
         override fun intercept(chain: Interceptor.Chain): Response {
             val request = chain.request()
             val segments = request.url.pathSegments
-            if (request.url.host != "procomic.pro" || segments.firstOrNull() != "__map__") {
+            val mapQuery = request.url.queryParameter("__map__")
+            if (request.url.host != "procomic.pro" || (mapQuery == null && segments.firstOrNull() != "__map__")) {
                 return chain.proceed(request)
             }
 
-            val chapterId = segments.getOrNull(1)?.toLongOrNull()
-                ?: throw Exception("Invalid map chapter")
-            val pageIndex = segments.getOrNull(2)?.toIntOrNull()
-                ?: throw Exception("Invalid map page")
+            val chapterId: Long
+            val pageIndex: Int
+            if (mapQuery != null) {
+                val parts = mapQuery.split(':', limit = 2)
+                chapterId = parts.getOrNull(0)?.toLongOrNull()
+                    ?: throw Exception("Invalid map chapter")
+                pageIndex = parts.getOrNull(1)?.toIntOrNull()
+                    ?: throw Exception("Invalid map page")
+            } else {
+                chapterId = segments.getOrNull(1)?.toLongOrNull()
+                    ?: throw Exception("Invalid map chapter")
+                pageIndex = segments.getOrNull(2)?.toIntOrNull()
+                    ?: throw Exception("Invalid map page")
+            }
 
             val bytes = source.renderMapPage(chapterId, pageIndex)
             return Response.Builder()

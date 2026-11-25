@@ -41,7 +41,7 @@ internal object MapImageRenderer {
                 if (pieceUrl.isBlank()) continue
 
                 val piece = decode(api.fetchPiece(pieceUrl))
-                    ?: throw Exception("Could not decode the AVIF page image (Android 12+ is required)")
+                    ?: throw Exception("Could not decode the protected page image. Update Mihon, clear chapter cache, or use Open in WebView.")
                 try {
                     val dest = Rect(
                         rectObj.optInt("left", 0),
@@ -67,7 +67,11 @@ internal object MapImageRenderer {
         HostDecoder.decode(bytes)?.let { return it }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             try {
-                return Api28Decoder.decode(bytes)
+                return Api28Decoder.decode(bytes, software = true)
+            } catch (_: Throwable) {
+            }
+            try {
+                return Api28Decoder.decode(bytes, software = false)
             } catch (_: Throwable) {
             }
         }
