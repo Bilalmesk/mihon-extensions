@@ -37,6 +37,17 @@ Direct APKs are in the `repo` branch under `apk/`.
 
 ## Changelog
 
+### 1.6.11
+
+- ProChan: fixed AVIF page decoding in Mihon. The host decoder's factory is
+  on `tachiyomi.decoder.ImageDecoder.Companion` (field `Companion`), not on
+  `INSTANCE` or the outer class. All known signatures are still probed.
+- ProChan: `Open in WebView` on a failed page now shows that exact page.
+  The website reader has no page URL parameter, so protected pages are served
+  by a loopback-only fallback page that uses the same renderer.
+- ProChan: decoder errors now include the platform and BitmapFactory
+  fallback failures too.
+
 ### 1.6.10
 
 - ProChan: fixed Mihon showing a permanent pending update. Mihon derives the

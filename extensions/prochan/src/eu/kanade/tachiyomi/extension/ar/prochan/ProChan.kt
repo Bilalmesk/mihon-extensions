@@ -51,7 +51,21 @@ class ProChan : HttpSource() {
     private val pageCache = ConcurrentHashMap<Long, ChapterPageData>()
     private val cdnPathCache = ConcurrentHashMap<Long, String>()
 
+    // Small LRU of pages already rendered for the reader, so the WebView
+    // fallback can show the exact page without fetching the pieces again.
+    private val renderedPages = object : LinkedHashMap<String, ByteArray>(8, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, ByteArray>?): Boolean {
+            return size > 8
+        }
+    }
+
+    @Volatile
+    internal var lastPageError: String = ""
+
     override val client: OkHttpClient by lazy {
+        // Start the exact-page WebView fallback before any cached page URL is
+        // reused, so a cached loopback URL still points at a live server.
+        PageServer.start(this)
         network.client.newBuilder()
             .addInterceptor(MapImageInterceptor(this))
             .build()
@@ -153,7 +167,10 @@ class ProChan : HttpSource() {
             } else {
                 "$baseUrl/__map__/$chapterId/${map.pageIndex}"
             }
-            pages.add(Page(pages.size, url, url))
+            // Leave imageUrl null so it is resolved when the page loads.
+            // That keeps cached page lists from storing a stale loopback port,
+            // and lets the error screen open the exact page in WebView.
+            pages.add(Page(pages.size, url))
         }
 
         if (pages.isEmpty()) throw Exception("No pages found for this chapter")
@@ -174,8 +191,32 @@ class ProChan : HttpSource() {
         if (result.pass != data.pass) {
             pageCache[chapterId] = data.copy(pass = result.pass)
         }
-        return MapImageRenderer.render(api, result.map)
+        val bytes = MapImageRenderer.render(api, result.map)
+        synchronized(renderedPages) {
+            renderedPages[pageKey(chapterId, pageIndex)] = bytes
+        }
+        return bytes
     }
+
+    /**
+     * Returns the rendered page for [PageServer], reusing the image the reader
+     * just decoded when possible.
+     */
+    internal fun renderedOrRender(chapterId: Long, pageIndex: Int): ByteArray? {
+        synchronized(renderedPages) {
+            renderedPages[pageKey(chapterId, pageIndex)]?.let { return it }
+        }
+
+        return try {
+            lastPageError = ""
+            renderMapPage(chapterId, pageIndex)
+        } catch (e: Throwable) {
+            lastPageError = e.message ?: e.javaClass.simpleName
+            null
+        }
+    }
+
+    private fun pageKey(chapterId: Long, pageIndex: Int): String = "$chapterId:$pageIndex"
 
     private fun loadChapterPages(chapterId: Long, slug: String, number: String, cdnHint: String): ChapterPageData {
         val root = try {
@@ -542,11 +583,38 @@ class ProChan : HttpSource() {
     }
 
     override fun imageRequest(page: Page): Request {
-        val url = page.imageUrl ?: page.url
+        // `page.url` is the internal reader URL. `page.imageUrl` may be the
+        // loopback exact-page fallback, which must not be used for downloads
+        // or normal in-reader loading.
+        val url = page.url.ifBlank { page.imageUrl.orEmpty() }
         return GET(url, imageHeaders)
     }
 
-    override suspend fun getImageUrl(page: Page): String = page.url
+    override suspend fun getImageUrl(page: Page): String {
+        val map = mapPageFromUrl(page.url) ?: return page.url
+        return PageServer.pageUrl(this, map.first, map.second) ?: page.url
+    }
+
+    private fun mapPageFromUrl(url: String): Pair<Long, Int>? {
+        val queryMarker = "?__map__="
+        val queryIndex = url.indexOf(queryMarker)
+        if (queryIndex >= 0) {
+            val value = url.substring(queryIndex + queryMarker.length).substringBefore('&')
+            val parts = value.split(':', limit = 2)
+            val chapterId = parts.getOrNull(0)?.toLongOrNull()
+            val pageIndex = parts.getOrNull(1)?.toIntOrNull()
+            if (chapterId != null && pageIndex != null) return chapterId to pageIndex
+        }
+
+        val path = url.substringAfter("/__map__/", "")
+        if (path.isNotBlank()) {
+            val parts = path.split('/')
+            val chapterId = parts.getOrNull(0)?.substringBefore('?')?.toLongOrNull()
+            val pageIndex = parts.getOrNull(1)?.substringBefore('?')?.toIntOrNull()
+            if (chapterId != null && pageIndex != null) return chapterId to pageIndex
+        }
+        return null
+    }
 
     private inner class MapImageInterceptor(
         private val source: ProChan,

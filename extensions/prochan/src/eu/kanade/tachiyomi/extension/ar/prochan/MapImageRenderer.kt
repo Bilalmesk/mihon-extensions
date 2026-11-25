@@ -15,6 +15,9 @@ import kotlin.math.min
 
 internal object MapImageRenderer {
 
+    @Volatile
+    private var lastError: String = ""
+
     fun render(api: ProChanApi, map: JSONObject): ByteArray {
         val dim = map.optJSONArray("dim") ?: throw Exception("Protected page is missing its size")
         val width = max(1, dim.optInt(0))
@@ -44,7 +47,7 @@ internal object MapImageRenderer {
                     ?: throw Exception(
                         "Could not decode the protected page image. " +
                             "Update Mihon, clear chapter cache, or use Open in WebView. " +
-                            "Decoder: ${HostDecoder.lastError.take(240)}",
+                            "Decoder: ${lastError.ifBlank { HostDecoder.lastError }.take(320)}",
                     )
                 try {
                     val dest = Rect(
@@ -69,17 +72,31 @@ internal object MapImageRenderer {
 
     private fun decode(bytes: ByteArray): Bitmap? {
         HostDecoder.decode(bytes)?.let { return it }
+
+        val errors = mutableListOf<String>()
+        if (HostDecoder.lastError.isNotBlank()) {
+            errors += HostDecoder.lastError
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             try {
                 return Api28Decoder.decode(bytes, software = true)
-            } catch (_: Throwable) {
+            } catch (e: Throwable) {
+                errors += "platform-software: ${e.javaClass.simpleName}: ${e.message.orEmpty().take(80)}"
             }
             try {
                 return Api28Decoder.decode(bytes, software = false)
-            } catch (_: Throwable) {
+            } catch (e: Throwable) {
+                errors += "platform-hardware: ${e.javaClass.simpleName}: ${e.message.orEmpty().take(80)}"
             }
         }
-        return BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+        try {
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.let { return it }
+            errors += "bitmap-factory: no bitmap"
+        } catch (e: Throwable) {
+            errors += "bitmap-factory: ${e.javaClass.simpleName}: ${e.message.orEmpty().take(80)}"
+        }
+        lastError = errors.joinToString("; ")
+        return null
     }
 
     private fun computeRects(width: Int, height: Int, mode: String, count: Int): JSONArray {

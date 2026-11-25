@@ -106,9 +106,28 @@ internal object HostDecoder {
         }
 
         val targets = mutableListOf<Pair<Any?, Class<*>>>()
-        runCatching {
-            cls.getField("INSTANCE").get(null)?.let { targets += it to it.javaClass }
+
+        // Mihon's decoder library exposes newInstance() on the Kotlin companion
+        // object. The field is `Companion`; some forks expose it as `INSTANCE`.
+        // The outer class only has synthetic accessors, so probing it alone
+        // always fails with "no matching signature".
+        var companion: Any? = null
+        for (fieldName in listOf("Companion", "INSTANCE")) {
+            companion = runCatching { cls.getField(fieldName).get(null) }.getOrNull()
+            if (companion != null) break
         }
+        val companionClass = companion?.javaClass
+            ?: findClass("tachiyomi.decoder.ImageDecoder\$Companion")
+        if (companion == null && companionClass != null) {
+            companion = runCatching {
+                companionClass.getDeclaredConstructor().apply { isAccessible = true }.newInstance()
+            }.getOrNull()
+        }
+        if (companion != null && companionClass != null) {
+            targets += companion to companionClass
+        }
+
+        // Kept for forks that expose newInstance() as a static method.
         targets += null to cls
 
         var decoder: Any? = null
