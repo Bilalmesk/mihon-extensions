@@ -37,6 +37,12 @@ Direct APKs are in the `repo` branch under `apk/`.
 
 ## Changelog
 
+### 1.6.7
+
+- ProChan: use the series CDN path (`cdn2`/`cdn3`) when preparing protected
+  pages. This fixes `Piece HTTP 404` and only the first 3 pages loading on
+  manhua/manhwa titles.
+
 ### 1.6.6
 
 - ProChan: mark coin/shortlink-locked chapters as `(مقفل)` and show a clear

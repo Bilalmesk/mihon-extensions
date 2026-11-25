@@ -1,0 +1,101 @@
+- generic [active] [ref=f192e1]:
+  - generic [ref=f192e4]:
+    - banner [ref=f192e5]:
+      - generic [ref=f192e6]:
+        - button "فتح القائمة الرئيسية" [ref=f192e8] [cursor=pointer]
+        - link "ProComic & Novel" [ref=f192e12] [cursor=pointer]:
+          - /url: https://procomic.pro/ar
+        - textbox "فتح البحث" [ref=f192e17]:
+          - /placeholder: ابحث عن مانجا، فصول، مؤلفين...
+        - generic [ref=f192e21]:
+          - link "الإشعارات" [ref=f192e22] [cursor=pointer]:
+            - /url: /notifications
+            - generic [ref=f192e23]: "1"
+          - generic [ref=f192e24]:
+            - link "الحساب" [ref=f192e25] [cursor=pointer]:
+              - /url: /auth/login
+              - generic [ref=f192e29]: تسجيل الدخول
+            - link "إنشاء حساب" [ref=f192e30] [cursor=pointer]:
+              - /url: /auth/register
+    - main [ref=f192e31]:
+      - generic [ref=f192e32]:
+        - navigation "مسار التنقل" [ref=f192e33]:
+          - list [ref=f192e34]:
+            - listitem [ref=f192e35]:
+              - link "الرئيسية" [ref=f192e36] [cursor=pointer]:
+                - /url: /ar
+            - listitem [aria-hidden] [ref=f192e37]: /
+            - listitem [ref=f192e38]:
+              - link "جميع السلاسل" [ref=f192e39] [cursor=pointer]:
+                - /url: /ar/series
+            - listitem [aria-hidden] [ref=f192e40]: /
+            - listitem [ref=f192e41]:
+              - link "مانجا" [ref=f192e42] [cursor=pointer]:
+                - /url: /ar/series?type=manga
+            - listitem [aria-hidden] [ref=f192e43]: /
+            - listitem [ref=f192e44]:
+              - link "The Lazy Aristocrat" [ref=f192e45] [cursor=pointer]:
+                - /url: /ar/the-lazy-aristocrat-913
+            - listitem [aria-hidden] [ref=f192e46]: /
+            - listitem [ref=f192e47]: الفصل 2
+        - generic [ref=f192e48]:
+          - generic [ref=f192e49]:
+            - img "The Lazy Aristocrat - 2 - عنصر ومعلم" [ref=f192e50]
+            - 'heading "مانجا The Lazy Aristocrat - الفصل 2: عنصر ومعلم" [level=1] [ref=f192e51]'
+          - generic [ref=f192e52]:
+            - button "عرض اختصارات لوحة المفاتيح" [ref=f192e53] [cursor=pointer]
+            - button "إبلاغ عن مشكلة في الفصل" [ref=f192e56] [cursor=pointer]
+        - region "عن The Lazy Aristocrat" [ref=f192e59]:
+          - paragraph [ref=f192e60]: "تقرأ الآن مانجا The Lazy Aristocrat - الفصل 2: عنصر ومعلم من مانجا The Lazy Aristocrat مترجمة إلى العربية على ProComic. تُحدَّث الفصول أولاً بأول بجودة عالية."
+          - paragraph [ref=f192e61]:
+            - generic [ref=f192e62]: "التصنيفات:"
+            - text: Action، Fantasy، Adventure، Comedy، Shounen، Harem، Isekai، Magic، Lazy Protagonist
+        - generic [ref=f192e63]:
+          - link "التالي" [ref=f192e64] [cursor=pointer]:
+            - /url: /ar/chapter/the-lazy-aristocrat-3-222516
+          - generic [ref=f192e66]:
+            - link "صفحة العمل" [ref=f192e67] [cursor=pointer]:
+              - /url: /ar/the-lazy-aristocrat-913
+            - button "قائمة الفصول" [ref=f192e69] [cursor=pointer]
+          - link "السابق" [ref=f192e71] [cursor=pointer]:
+            - /url: /ar/chapter/the-lazy-aristocrat-1-222512
+        - generic [ref=f192e77]:
+          - img "page 1" [ref=f192e80]
+          - img "page 2" [ref=f192e83]
+          - generic [ref=f192e87]: سيتم تحميل بقية الصفحات عند المتابعة...
+        - generic [ref=f192e88]:
+          - link "التالي" [ref=f192e89] [cursor=pointer]:
+            - /url: /ar/chapter/the-lazy-aristocrat-3-222516
+          - generic [ref=f192e91]:
+            - link "صفحة العمل" [ref=f192e92] [cursor=pointer]:
+              - /url: /ar/the-lazy-aristocrat-913
+            - button "قائمة الفصول" [ref=f192e94] [cursor=pointer]
+          - link "السابق" [ref=f192e96] [cursor=pointer]:
+            - /url: /ar/chapter/the-lazy-aristocrat-1-222512
+        - group "مشاركة" [ref=f192e98]:
+          - link "مشاركة على فيسبوك" [ref=f192e106] [cursor=pointer]:
+            - /url: https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fprocomic.pro%2Far%2Fchapter%2Fthe-lazy-aristocrat-2-222515
+          - link "مشاركة على X" [ref=f192e108] [cursor=pointer]:
+            - /url: https://twitter.com/intent/tweet?url=https%3A%2F%2Fprocomic.pro%2Far%2Fchapter%2Fthe-lazy-aristocrat-2-222515&text=%D9%85%D8%A7%D9%86%D8%AC%D8%A7%20The%20Lazy%20Aristocrat%20-%20%D8%A7%D9%84%D9%81%D8%B5%D9%84%202%3A%20%D8%B9%D9%86%D8%B5%D8%B1%20%D9%88%D9%85%D8%B9%D9%84%D9%85
+          - link "مشاركة على واتساب" [ref=f192e110] [cursor=pointer]:
+            - /url: https://api.whatsapp.com/send?text=%D9%85%D8%A7%D9%86%D8%AC%D8%A7%20The%20Lazy%20Aristocrat%20-%20%D8%A7%D9%84%D9%81%D8%B5%D9%84%202%3A%20%D8%B9%D9%86%D8%B5%D8%B1%20%D9%88%D9%85%D8%B9%D9%84%D9%85%20https%3A%2F%2Fprocomic.pro%2Far%2Fchapter%2Fthe-lazy-aristocrat-2-222515
+          - link "مشاركة على تيليجرام" [ref=f192e112] [cursor=pointer]:
+            - /url: https://t.me/share/url?url=https%3A%2F%2Fprocomic.pro%2Far%2Fchapter%2Fthe-lazy-aristocrat-2-222515&text=%D9%85%D8%A7%D9%86%D8%AC%D8%A7%20The%20Lazy%20Aristocrat%20-%20%D8%A7%D9%84%D9%81%D8%B5%D9%84%202%3A%20%D8%B9%D9%86%D8%B5%D8%B1%20%D9%88%D9%85%D8%B9%D9%84%D9%85
+          - link "مشاركة على ثريدز" [ref=f192e114] [cursor=pointer]:
+            - /url: https://www.threads.net/intent/post?text=%D9%85%D8%A7%D9%86%D8%AC%D8%A7%20The%20Lazy%20Aristocrat%20-%20%D8%A7%D9%84%D9%81%D8%B5%D9%84%202%3A%20%D8%B9%D9%86%D8%B5%D8%B1%20%D9%88%D9%85%D8%B9%D9%84%D9%85%20https%3A%2F%2Fprocomic.pro%2Far%2Fchapter%2Fthe-lazy-aristocrat-2-222515
+          - link "مشاركة على ريديت" [ref=f192e116] [cursor=pointer]:
+            - /url: https://www.reddit.com/submit?url=https%3A%2F%2Fprocomic.pro%2Far%2Fchapter%2Fthe-lazy-aristocrat-2-222515&title=%D9%85%D8%A7%D9%86%D8%AC%D8%A7%20The%20Lazy%20Aristocrat%20-%20%D8%A7%D9%84%D9%81%D8%B5%D9%84%202%3A%20%D8%B9%D9%86%D8%B5%D8%B1%20%D9%88%D9%85%D8%B9%D9%84%D9%85
+          - button "نسخ الرابط" [ref=f192e118] [cursor=pointer]
+        - group [ref=f192e120]:
+          - generic "وصف الفصل عرض أكثر" [ref=f192e121] [cursor=pointer]:
+            - heading "وصف الفصل" [level=2] [ref=f192e122]
+            - generic [ref=f192e123]: عرض أكثر
+        - complementary [aria-hidden]
+        - complementary [aria-hidden]
+      - button "العودة إلى الأعلى"
+  - region "Notifications (F8)":
+    - list
+  - alert [ref=f192e127]
+  - complementary "خصّص تجربة القراءة" [ref=f192e128]:
+    - button "خصّص تجربة القراءة" [ref=f192e129] [cursor=pointer]
+    - button "ليس الآن" [ref=f192e130] [cursor=pointer]

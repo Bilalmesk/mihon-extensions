@@ -49,6 +49,7 @@ class ProChan : HttpSource() {
     private val api by lazy { ProChanApi(network.client) }
 
     private val pageCache = ConcurrentHashMap<Long, ChapterPageData>()
+    private val cdnPathCache = ConcurrentHashMap<Long, String>()
 
     override val client: OkHttpClient by lazy {
         network.client.newBuilder()
@@ -138,8 +139,9 @@ class ProChan : HttpSource() {
             ?: throw Exception("Invalid chapter url")
         val slug = parts.getOrNull(1).orEmpty()
         val number = parts.getOrNull(2).orEmpty()
+        val cdnHint = parts.getOrNull(3).orEmpty()
 
-        val data = loadChapterPages(chapterId, slug, number)
+        val data = loadChapterPages(chapterId, slug, number, cdnHint)
         val pages = mutableListOf<Page>()
 
         data.publicImages.forEach { url ->
@@ -155,7 +157,7 @@ class ProChan : HttpSource() {
     }
 
     internal fun renderMapPage(chapterId: Long, pageIndex: Int): ByteArray {
-        val data = pageCache[chapterId] ?: loadChapterPages(chapterId, "", "")
+        val data = pageCache[chapterId] ?: loadChapterPages(chapterId, "", "", "")
         val map = data.maps.firstOrNull { it.pageIndex == pageIndex }
             ?: throw Exception("Protected page is no longer available")
 
@@ -171,7 +173,7 @@ class ProChan : HttpSource() {
         return MapImageRenderer.render(api, result.map)
     }
 
-    private fun loadChapterPages(chapterId: Long, slug: String, number: String): ChapterPageData {
+    private fun loadChapterPages(chapterId: Long, slug: String, number: String, cdnHint: String): ChapterPageData {
         val root = try {
             api.getJson("/api/android/chapter/$chapterId")
         } catch (e: ApiException) {
@@ -205,6 +207,7 @@ class ProChan : HttpSource() {
         val series = data.optJSONObject("series")
         val seriesSlug = series?.optString("slug").orEmpty().ifBlank { slug }
         val chapterNumber = data.optString("chapter_number").ifBlank { number }
+        val cdnPath = resolveCdnPath(cdnHint, data.optString("cdn_path"), series?.optLong("id", 0L) ?: 0L)
 
         val refreshedToken = api.refreshDeferredToken(chapterId, token)
         val deferred = try {
@@ -239,7 +242,6 @@ class ProChan : HttpSource() {
 
         val maps = mutableListOf<MapPage>()
         val mapsArray = deferredData.optJSONArray("maps") ?: JSONArray()
-        val cdnPath = data.optString("cdn_path").ifBlank { "cdn1" }
         for (index in 0 until mapsArray.length()) {
             val item = mapsArray.optJSONObject(index) ?: continue
             val mapToken = item.optString("token")
@@ -360,9 +362,10 @@ class ProChan : HttpSource() {
                 val locked = item.optBoolean("lockedByCoins", false) ||
                     item.optBoolean("lockedByExclusive", false) ||
                     item.optInt("coinsRequired", 0) > 0
+                val chapterCdn = item.optString("cdn_path")
 
                 val chapter = SChapter.create().apply {
-                    url = "$id|$slug|$number"
+                    url = "$id|$slug|$number|$chapterCdn"
                     val baseName = when {
                         title.isBlank() -> "الفصل $number"
                         title == number || title == "الفصل $number" -> "الفصل $number"
@@ -395,6 +398,27 @@ class ProChan : HttpSource() {
     private fun mangaIdFromUrl(url: String): Long {
         val id = url.trim('/').substringBefore('/').toLongOrNull()
         return id ?: throw Exception("Invalid manga url")
+    }
+
+    private fun resolveCdnPath(hint: String, chapterCdn: String, seriesId: Long): String {
+        hint.trim().takeIf { it.startsWith("cdn") }?.let { return it }
+        chapterCdn.trim().takeIf { it.startsWith("cdn") }?.let { return it }
+
+        if (seriesId > 0L) {
+            cdnPathCache[seriesId]?.let { return it }
+            try {
+                val path = api.getJson("/api/android/content/$seriesId")
+                    .optJSONObject("data")
+                    ?.optString("cdn_path")
+                    .orEmpty()
+                if (path.startsWith("cdn")) {
+                    cdnPathCache[seriesId] = path
+                    return path
+                }
+            } catch (_: Throwable) {
+            }
+        }
+        return "cdn1"
     }
 
     private fun lockedMessage(body: String): String? {

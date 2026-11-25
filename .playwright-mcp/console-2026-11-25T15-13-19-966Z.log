@@ -1,0 +1,9 @@
+[     445ms] [WARNING] OTS parsing error: Size of decompressed WOFF 2.0 is less than compressed size @ https://challenges.cloudflare.com/cdn-cgi/challenge-platform/h/g/turnstile/f/av0/rchCiENxilS8n0ayzeV4DouBvcDvU2Dljjj2qDcbeyRpRbGbuTGBMkkP2S6BTX-JkUN3QGWqNWahimUlzxY1aMRa8uxTKSwXxM/aukmr/0x4AAAAAACwjiJ5Kt0K0kWx9/auto/fbE/failure_retry/normal?lang=auto:0
+[    1145ms] [WARNING] WebSocket connection to 'wss://procomic.pro/ws' failed: WebSocket is closed before the connection is established. @ https://procomic.pro/_next/static/chunks/76338-1d5de29db6f7af30.js:0
+[    1462ms] [ERROR] Failed to load resource: the server responded with a status of 401 () @ https://procomic.pro/api/library/reading:0
+[    1579ms] [WARNING] No banner mount target id found: 2023716 @ https://js.cabnnr.com/banner-admanager/build.m.js:0
+[    1579ms] [WARNING] No banner mount target id found: 2023717 @ https://js.cabnnr.com/banner-admanager/build.m.js:0
+[    1580ms] [WARNING] No banner mount target id found: 2023718 @ https://js.cabnnr.com/banner-admanager/build.m.js:0
+[    1581ms] [WARNING] No banner mount target id found: 2023719 @ https://js.cabnnr.com/banner-admanager/build.m.js:0
+[    1582ms] [WARNING] No banner mount target id found: 2023720 @ https://js.cabnnr.com/banner-admanager/build.m.js:0
+[    1991ms] [LOG] Error @ https://acscdn.com/script/aclib.js:0
