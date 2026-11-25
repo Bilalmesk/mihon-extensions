@@ -230,6 +230,7 @@ class ProChan : HttpSource() {
             } catch (e: ApiException) {
                 lockedMessage(e.body)?.let { throw Exception(it, e) }
                 deferredError = e
+                if (e.code == 403) runCatching { Thread.sleep(2500) }
             }
         }
 
@@ -240,6 +241,7 @@ class ProChan : HttpSource() {
             } catch (first: ApiException) {
                 lockedMessage(first.body)?.let { throw Exception(it, first) }
                 deferredError = first
+                if (first.code == 403) runCatching { Thread.sleep(2500) }
                 val fresh = api.refreshDeferredToken(chapterId, token)
                 if (fresh != null && fresh != token) {
                     deferred = api.getWebDeferred(chapterId, fresh, androidSplit)

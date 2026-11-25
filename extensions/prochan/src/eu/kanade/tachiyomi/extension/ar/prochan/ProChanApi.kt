@@ -249,7 +249,7 @@ internal class ProChanApi(val plainClient: OkHttpClient) {
                 }
 
                 if (!response.isSuccessful) {
-                    throw ApiException(response.code, text, "HTTP ${response.code} for $url")
+                    throw ApiException(response.code, text, "HTTP ${response.code} for $url: ${text.take(240)}")
                 }
                 return root ?: throw Exception("Invalid API response for $url")
             }
@@ -261,7 +261,7 @@ internal class ProChanApi(val plainClient: OkHttpClient) {
         plainClient.newCall(request).execute().use { response ->
             val text = response.body.string()
             if (!response.isSuccessful) {
-                throw ApiException(response.code, text, "HTTP ${response.code}")
+                throw ApiException(response.code, text, "HTTP ${response.code}: ${text.take(300)}")
             }
             return runCatching { JSONObject(text) }.getOrElse { throw Exception("Invalid JSON response") }
         }

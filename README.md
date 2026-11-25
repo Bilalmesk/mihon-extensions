@@ -37,6 +37,12 @@ Direct APKs are in the `repo` branch under `apk/`.
 
 ## Changelog
 
+### 1.7.2
+
+- ProChan: include HTTP error bodies in page/deferred errors, and pause
+  briefly before retrying after a 403 so batch downloads do not hit the
+  reader's short rate limit.
+
 ### 1.7.1
 
 - ProChan: use the reader page's own media token before the Android token,
