@@ -50,6 +50,15 @@ MODULES = [
         "version": "1.6.4",
         "code": 4,
     },
+    {
+        "module": "procomic",
+        "pkg": "eu.kanade.tachiyomi.extension.ar.procomic",
+        "name": "ProComic",
+        "base_url": "https://procomic.pro",
+        "source_id": 6818345659309721544,
+        "version": "1.6.5",
+        "code": 1,
+    },
 ]
 
 
