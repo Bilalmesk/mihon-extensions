@@ -1,4 +1,4 @@
-﻿package eu.kanade.tachiyomi.extension.ar.procomic
+package eu.kanade.tachiyomi.extension.ar.prochan
 
 import android.os.Build
 import android.util.Base64
@@ -36,7 +36,7 @@ internal class ProxyPlanResult(
     val pass: String,
 )
 
-internal class ProComicApi(val plainClient: OkHttpClient) {
+internal class ProChanApi(val plainClient: OkHttpClient) {
 
     private companion object {
         const val API_BASE = "https://pro-chan.com"

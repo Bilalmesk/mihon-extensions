@@ -1,4 +1,4 @@
-﻿package eu.kanade.tachiyomi.extension.ar.procomic
+package eu.kanade.tachiyomi.extension.ar.prochan
 
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -37,16 +37,16 @@ internal data class ChapterPageData(
     val pass: String,
 )
 
-class ProComic : HttpSource() {
+class ProChan : HttpSource() {
 
-    override val name = "ProComic"
+    override val name = "ProChan"
     override val baseUrl = "https://procomic.pro"
     override val lang = "ar"
     override val supportsLatest = true
 
     override fun getHomeUrl(): String = "https://procomic.net/ar"
 
-    private val api by lazy { ProComicApi(network.client) }
+    private val api by lazy { ProChanApi(network.client) }
 
     private val pageCache = ConcurrentHashMap<Long, ChapterPageData>()
 
@@ -465,7 +465,7 @@ class ProComic : HttpSource() {
     override suspend fun getImageUrl(page: Page): String = page.url
 
     private inner class MapImageInterceptor(
-        private val source: ProComic,
+        private val source: ProChan,
     ) : Interceptor {
         override fun intercept(chain: Interceptor.Chain): Response {
             val request = chain.request()

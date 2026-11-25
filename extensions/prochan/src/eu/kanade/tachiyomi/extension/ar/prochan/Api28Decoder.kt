@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.ar.procomic
+package eu.kanade.tachiyomi.extension.ar.prochan
 
 import android.graphics.Bitmap
 import android.graphics.ImageDecoder

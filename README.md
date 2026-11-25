@@ -8,7 +8,7 @@ Five Arabic manga sources packaged as Mihon/Tachiyomi extensions:
 | MangaArabi | https://mangarabi.com | `eu.kanade.tachiyomi.extension.ar.mangarabi` |
 | MangaArabia | https://mangarabia.com | `eu.kanade.tachiyomi.extension.ar.mangarabia` |
 | MangaCool | https://mangacool.net | `eu.kanade.tachiyomi.extension.ar.mangacool` |
-| ProComic | https://procomic.net | `eu.kanade.tachiyomi.extension.ar.procomic` |
+| ProChan | https://procomic.net | `eu.kanade.tachiyomi.extension.ar.prochan` |
 
 All sources use extension API `1.6` (Mihon 0.19+/Tachiyomi 1.6 style suspend API).
 
@@ -33,9 +33,11 @@ Direct APKs are in the `repo` branch under `apk/`.
 
 ### 1.6.5
 
-- Added ProComic (`procomic.net` / reader `procomic.pro`), the new home of
-  ProChan. The source uses the app API and reconstructs protected reader
-  pages from the server's image pieces.
+- Added ProChan (`procomic.net` / reader `procomic.pro`), the new home of
+  the old ProChan source. The source uses the app API and reconstructs
+  protected reader pages from the server's image pieces. It is packaged
+  as `...prochan` to avoid colliding with the separate ProComic extension
+  in the Keiyoushi repository.
 
 ### 1.6.4
 
@@ -63,7 +65,7 @@ gradle -g /path/to/gradle-home \
   :extensions:mangarabi:assembleRelease \
   :extensions:mangarabia:assembleRelease \
   :extensions:mangacool:assembleRelease \
-  :extensions:procomic:assembleRelease
+  :extensions:prochan:assembleRelease
 ```
 
 Create `keystore.properties` in the project root (it is git-ignored):
@@ -113,7 +115,7 @@ signed with the same key, otherwise Mihon will treat the extension as untrusted.
   from `/titles/<slug>/chapter-rows`.
 - MangaArabi and MangaCool use their public JSON APIs for lists, search, and
   details.
-- ProComic's API requires Android-app request signatures. The source
+- ProChan's API requires Android-app request signatures. The source
   registers a per-process device key automatically and signs its API calls.
   Reader pages are AVIF; they are decoded and composited (Android 12+ for
   AVIF support).

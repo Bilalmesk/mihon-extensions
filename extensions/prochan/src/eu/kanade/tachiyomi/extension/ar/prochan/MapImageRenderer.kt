@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.extension.ar.procomic
+package eu.kanade.tachiyomi.extension.ar.prochan
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -15,7 +15,7 @@ import kotlin.math.min
 
 internal object MapImageRenderer {
 
-    fun render(api: ProComicApi, map: JSONObject): ByteArray {
+    fun render(api: ProChanApi, map: JSONObject): ByteArray {
         val dim = map.optJSONArray("dim") ?: throw Exception("Protected page is missing its size")
         val width = max(1, dim.optInt(0))
         val height = max(1, dim.optInt(1))

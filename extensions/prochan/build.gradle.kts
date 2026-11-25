@@ -6,11 +6,11 @@ plugins {
 }
 
 android {
-    namespace = "eu.kanade.tachiyomi.extension.ar.procomic"
+    namespace = "eu.kanade.tachiyomi.extension.ar.prochan"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "eu.kanade.tachiyomi.extension.ar.procomic"
+        applicationId = "eu.kanade.tachiyomi.extension.ar.prochan"
         minSdk = 23
         targetSdk = 35
         versionCode = 1
