@@ -65,13 +65,18 @@ internal object HostDecoder {
     private fun decodeTachiyomi(bytes: ByteArray): Bitmap? {
         return try {
             val cls = findClass("tachiyomi.decoder.ImageDecoder") ?: return null
-            val decoder = cls.getMethod("newInstance", InputStream::class.java)
-                .invoke(null, ByteArrayInputStream(bytes)) ?: return null
+            val companion = cls.getField("INSTANCE").get(null) ?: return null
+            val decoder = companion.javaClass.getMethod(
+                "newInstance",
+                InputStream::class.java,
+                java.lang.Boolean.TYPE,
+                ByteArray::class.java,
+            ).invoke(companion, ByteArrayInputStream(bytes), false, null) ?: return null
             try {
                 val width = cls.getMethod("getWidth").invoke(decoder) as Int
                 val height = cls.getMethod("getHeight").invoke(decoder) as Int
-                cls.getMethod("decode", Rect::class.java)
-                    .invoke(decoder, Rect(0, 0, width, height)) as? Bitmap
+                cls.getMethod("decode", Rect::class.java, Integer.TYPE)
+                    .invoke(decoder, Rect(0, 0, width, height), 1) as? Bitmap
             } finally {
                 runCatching { cls.getMethod("recycle").invoke(decoder) }
             }

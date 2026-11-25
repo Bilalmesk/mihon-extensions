@@ -37,6 +37,13 @@ Direct APKs are in the `repo` branch under `apk/`.
 
 ## Changelog
 
+### 1.7.0
+
+- ProChan: fixed the host decoder reflection for Mihon. Mihon's
+  `tachiyomi.decoder.ImageDecoder` exposes its factory on a companion object
+  with extra default arguments; the previous call used the wrong signature.
+  This is the decoder that actually decodes AVIF on Samsung/Android 14.
+
 ### 1.6.9
 
 - ProChan: added Tachiyomi/Mihon HDR frame decoding fallbacks, platform

@@ -2,7 +2,7 @@ package eu.kanade.tachiyomi.extension.ar.prochan
 
 import android.graphics.Bitmap
 import android.graphics.ImageDecoder
-import java.io.ByteArrayInputStream
+import java.io.File
 import java.nio.ByteBuffer
 
 /**
@@ -10,10 +10,16 @@ import java.nio.ByteBuffer
  */
 internal object Api28Decoder {
     fun decode(bytes: ByteArray, software: Boolean): Bitmap {
-        // Some Samsung/OEM decoders fail on a heap ByteBuffer source. An
-        // InputStream source takes the normal stream path instead.
+        // Some Samsung/OEM decoders fail on a heap ByteBuffer source. A file
+        // source takes a different path and avoids that bug.
         val bitmap = try {
-            decodeSource(ImageDecoder.createSource(ByteArrayInputStream(bytes)), software)
+            val file = File.createTempFile("prochan-avif-", ".avif")
+            try {
+                file.writeBytes(bytes)
+                decodeSource(ImageDecoder.createSource(file), software)
+            } finally {
+                file.delete()
+            }
         } catch (_: Throwable) {
             val direct = ByteBuffer.allocateDirect(bytes.size).apply {
                 put(bytes)
