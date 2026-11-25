@@ -37,6 +37,15 @@ Direct APKs are in the `repo` branch under `apk/`.
 
 ## Changelog
 
+### 1.6.10
+
+- ProChan: fixed Mihon showing a permanent pending update. Mihon derives the
+  extension-lib version from the first two parts of the version name, so
+  `1.7.x` was read as ext-lib `1.7` while the APK declares `1.6`. That made
+  every installed copy look out of date forever. Version names now stay on
+  `1.6.x`; versionCode 9 replaces 1.7.2. This is a version-name correction,
+  not a downgrade.
+
 ### 1.7.2
 
 - ProChan: include HTTP error bodies in page/deferred errors, and pause
