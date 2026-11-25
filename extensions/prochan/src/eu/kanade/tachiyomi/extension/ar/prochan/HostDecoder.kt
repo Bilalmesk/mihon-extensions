@@ -130,10 +130,11 @@ internal object HostDecoder {
         }
         if (companion != null && companionClass != null) {
             targets += companion to companionClass
+        } else {
+            // Kept for forks that expose newInstance() as a static method on
+            // the outer class instead of a companion object.
+            targets += null to cls
         }
-
-        // Kept for forks that expose newInstance() as a static method.
-        targets += null to cls
 
         var decoder: Any? = null
         for ((receiver, target) in targets) {

@@ -37,6 +37,11 @@ Direct APKs are in the `repo` branch under `apk/`.
 
 ## Changelog
 
+### 1.6.14
+
+- ProChan: keep the companion `newInstance` failure visible instead of
+  letting the outer-class fallback overwrite it with a generic error.
+
 ### 1.6.13
 
 - ProChan: `Open in WebView` on a failed page now composes that page from
