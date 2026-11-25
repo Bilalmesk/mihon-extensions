@@ -64,6 +64,7 @@ internal object MapImageRenderer {
     }
 
     private fun decode(bytes: ByteArray): Bitmap? {
+        HostDecoder.decode(bytes)?.let { return it }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             try {
                 return Api28Decoder.decode(bytes)

@@ -37,6 +37,12 @@ Direct APKs are in the `repo` branch under `apk/`.
 
 ## Changelog
 
+### 1.6.8
+
+- ProChan: decode protected AVIF pieces with Mihon's bundled image decoder
+  first, fixing Samsung/Android 14 devices where the platform AVIF decoder
+  fails. Platform AVIF/BitmapFactory remain as fallbacks.
+
 ### 1.6.7
 
 - ProChan: use the series CDN path (`cdn2`/`cdn3`) when preparing protected
