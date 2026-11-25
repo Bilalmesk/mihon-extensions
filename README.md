@@ -37,6 +37,12 @@ Direct APKs are in the `repo` branch under `apk/`.
 
 ## Changelog
 
+### 1.6.6
+
+- ProChan: mark coin/shortlink-locked chapters as `(مقفل)` and show a clear
+  "chapter locked" message instead of a raw HTTP 403. Also fixed chapter
+  titles that rendered as `null`.
+
 ### 1.6.5
 
 - Added ProChan (`procomic.net` / reader `procomic.pro`), the new home of

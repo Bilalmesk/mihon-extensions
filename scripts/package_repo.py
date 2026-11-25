@@ -56,8 +56,8 @@ MODULES = [
         "name": "ProChan",
         "base_url": "https://procomic.pro",
         "source_id": 4021144253066869644,
-        "version": "1.6.5",
-        "code": 1,
+        "version": "1.6.6",
+        "code": 2,
     },
 ]
 

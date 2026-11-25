@@ -159,7 +159,12 @@ class ProChan : HttpSource() {
         val map = data.maps.firstOrNull { it.pageIndex == pageIndex }
             ?: throw Exception("Protected page is no longer available")
 
-        val result = api.getProxyPlan(chapterId, map, data.pass)
+        val result = try {
+            api.getProxyPlan(chapterId, map, data.pass)
+        } catch (e: ApiException) {
+            lockedMessage(e.body)?.let { throw Exception(it, e) }
+            throw e
+        }
         if (result.pass != data.pass) {
             pageCache[chapterId] = data.copy(pass = result.pass)
         }
@@ -167,7 +172,12 @@ class ProChan : HttpSource() {
     }
 
     private fun loadChapterPages(chapterId: Long, slug: String, number: String): ChapterPageData {
-        val root = api.getJson("/api/android/chapter/$chapterId")
+        val root = try {
+            api.getJson("/api/android/chapter/$chapterId")
+        } catch (e: ApiException) {
+            lockedMessage(e.body)?.let { throw Exception(it, e) }
+            throw e
+        }
         val data = root.optJSONObject("data") ?: throw Exception("Chapter not found")
 
         val deferredMedia = data.optJSONObject("deferredMedia")
@@ -197,14 +207,19 @@ class ProChan : HttpSource() {
         val chapterNumber = data.optString("chapter_number").ifBlank { number }
 
         val refreshedToken = api.refreshDeferredToken(chapterId, token)
-        val deferred = if (refreshedToken != null && refreshedToken != token) {
-            try {
-                api.getWebDeferred(chapterId, refreshedToken, split)
-            } catch (first: ApiException) {
+        val deferred = try {
+            if (refreshedToken != null && refreshedToken != token) {
+                try {
+                    api.getWebDeferred(chapterId, refreshedToken, split)
+                } catch (first: ApiException) {
+                    api.getWebDeferred(chapterId, token, split)
+                }
+            } else {
                 api.getWebDeferred(chapterId, token, split)
             }
-        } else {
-            api.getWebDeferred(chapterId, token, split)
+        } catch (e: ApiException) {
+            lockedMessage(e.body)?.let { throw Exception(it, e) }
+            throw e
         }
         val deferredData = deferred.optJSONObject("data") ?: deferred
         val pass = deferredData.optString("pass")
@@ -336,16 +351,24 @@ class ProChan : HttpSource() {
                 val id = item.optLong("id", 0L)
                 if (id <= 0L) continue
                 val number = item.optString("chapter_number")
-                val title = item.optString("title").trim()
+                val rawTitle = item.opt("title")
+                val title = when (rawTitle) {
+                    null, JSONObject.NULL -> ""
+                    else -> rawTitle.toString().trim()
+                }
                 val language = item.optString("language")
+                val locked = item.optBoolean("lockedByCoins", false) ||
+                    item.optBoolean("lockedByExclusive", false) ||
+                    item.optInt("coinsRequired", 0) > 0
 
                 val chapter = SChapter.create().apply {
                     url = "$id|$slug|$number"
-                    name = when {
+                    val baseName = when {
                         title.isBlank() -> "الفصل $number"
-                        title == "الفصل $number" -> title
+                        title == number || title == "الفصل $number" -> "الفصل $number"
                         else -> "الفصل $number - $title"
                     }
+                    name = if (locked) "$baseName (مقفل)" else baseName
                     chapter_number = number.toFloatOrNull() ?: -1f
                     date_upload = parseIsoDate(item.optString("published_at"))
                     scanlator = item.optString("translator").takeUnless { it.isBlank() }.orEmpty()
@@ -372,6 +395,21 @@ class ProChan : HttpSource() {
     private fun mangaIdFromUrl(url: String): Long {
         val id = url.trim('/').substringBefore('/').toLongOrNull()
         return id ?: throw Exception("Invalid manga url")
+    }
+
+    private fun lockedMessage(body: String): String? {
+        val root = runCatching { JSONObject(body) }.getOrNull() ?: return null
+        if (root.optString("errorCode") != "ANDROID_CHAPTER_LOCKED") return null
+        val options = root.optJSONObject("options")
+        val coins = options?.optInt("coins", 0) ?: 0
+        val shortlink = options?.optString("shortlink_url").orEmpty()
+        val freeAt = options?.optString("freeAt").orEmpty()
+        return buildString {
+            append("هذا الفصل مقفل على ProChan")
+            if (coins > 0) append(" ($coins عملات)")
+            if (shortlink.isNotBlank()) append(". افتحه من: $shortlink")
+            if (freeAt.isNotBlank()) append(" أو انتظر حتى ${freeAt.substringBefore('T')}")
+        }
     }
 
     private fun isVisualType(type: String): Boolean {
