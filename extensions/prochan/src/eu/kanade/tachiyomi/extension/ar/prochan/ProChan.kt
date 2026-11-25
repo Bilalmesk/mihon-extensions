@@ -62,10 +62,18 @@ class ProChan : HttpSource() {
     @Volatile
     internal var lastPageError: String = ""
 
+    init {
+        // Bind the exact-page WebView fallback off the main thread. Cached
+        // page lists can already contain a loopback URL from an earlier
+        // session, so start it when the source is created instead of waiting
+        // for the first protected page to load.
+        Thread({ PageServer.start(this) }, "prochan-page-server-init").apply {
+            isDaemon = true
+            start()
+        }
+    }
+
     override val client: OkHttpClient by lazy {
-        // Start the exact-page WebView fallback before any cached page URL is
-        // reused, so a cached loopback URL still points at a live server.
-        PageServer.start(this)
         network.client.newBuilder()
             .addInterceptor(MapImageInterceptor(this))
             .build()

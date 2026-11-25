@@ -13,8 +13,8 @@ android {
         applicationId = "eu.kanade.tachiyomi.extension.ar.prochan"
         minSdk = 23
         targetSdk = 35
-        versionCode = 10
-        versionName = "1.6.11"
+        versionCode = 11
+        versionName = "1.6.12"
     }
 
     buildTypes {

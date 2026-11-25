@@ -37,6 +37,12 @@ Direct APKs are in the `repo` branch under `apk/`.
 
 ## Changelog
 
+### 1.6.12
+
+- ProChan: start the exact-page WebView fallback when the source is created,
+  off the main thread. This keeps already-cached loopback page URLs working
+  after reopening Mihon.
+
 ### 1.6.11
 
 - ProChan: fixed AVIF page decoding in Mihon. The host decoder's factory is
