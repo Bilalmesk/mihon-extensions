@@ -29,6 +29,12 @@ Direct APKs are in the `repo` branch under `apk/`.
 > 1.6.3, uninstall it first because it used a temporary key. Users on 1.6.2 or
 > earlier can update normally.
 
+> **ProChan package change:** this repo no longer ships the old
+> `eu.kanade.tachiyomi.extension.ar.procomic` package. If you installed the
+> old Manga Pro/ProChan or Keiyoushi ProComic extension, uninstall or disable
+> it before installing ProChan, so Mihon does not show two sources for the
+> same site.
+
 ## Changelog
 
 ### 1.6.5
