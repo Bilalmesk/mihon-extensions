@@ -13,8 +13,8 @@ android {
         applicationId = "eu.kanade.tachiyomi.extension.ar.mangarabi"
         minSdk = 23
         targetSdk = 35
-        versionCode = 4
-        versionName = "1.6.4"
+        versionCode = 5
+        versionName = "1.6.5"
     }
 
     buildTypes {

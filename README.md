@@ -6,7 +6,7 @@ Five Arabic manga sources packaged as Mihon/Tachiyomi extensions:
 | --- | --- | --- |
 | UniManga | https://unimanga.net | `eu.kanade.tachiyomi.extension.ar.unimanga` |
 | MangaArabi | https://mangarabi.com | `eu.kanade.tachiyomi.extension.ar.mangarabi` |
-| MangaArabia | https://mangarabia.com | `eu.kanade.tachiyomi.extension.ar.mangarabia` |
+| MangaArabia | https://mangarabi.com (merged) | `eu.kanade.tachiyomi.extension.ar.mangarabia` |
 | MangaCool | https://mangacool.net | `eu.kanade.tachiyomi.extension.ar.mangacool` |
 | ProChan | https://procomic.net | `eu.kanade.tachiyomi.extension.ar.prochan` |
 
@@ -36,6 +36,17 @@ Direct APKs are in the `repo` branch under `apk/`.
 > same site.
 
 ## Changelog
+
+### 1.6.5
+
+- MangaCool: updated the reader proof salt after the site rotated it. Page
+  loading works again.
+- MangaArabi: updated the reader server-action IDs and keep the more complete
+  page list from the server-rendered HTML or the action response.
+- MangaArabia: `mangarabia.com` now redirects to `mangarabi.com` and the old
+  API host no longer resolves. The source now uses the merged backend, so
+  existing library entries keep working. Also fixed the garbled Arabic
+  chapter names.
 
 ### 1.6.14
 

@@ -25,11 +25,13 @@ import java.util.Locale
 class MangaArabia : HttpSource() {
 
     override val name = "MangaArabia"
-    override val baseUrl = "https://mangarabia.com"
+    // mangarabia.com permanently redirects to mangarabi.com and its old API
+    // host no longer resolves, so this source now uses the merged backend.
+    override val baseUrl = "https://mangarabi.com"
     override val lang = "ar"
     override val supportsLatest = true
 
-    private val apiUrl = "https://api.mangarabia.com/api/v1"
+    private val apiUrl = "https://api.mangarabi.com/api/v1"
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
     private val textMediaType = "text/plain;charset=UTF-8".toMediaType()
 
@@ -49,9 +51,9 @@ class MangaArabia : HttpSource() {
     )
 
     private val defaultReaderActions = ReaderActions(
-        start = "408cf02fd3984a050390a1502d1ccc3170862614c2",
-        status = "40de608a74a57d04d6e581b4218bfadb1cbfe40fb8",
-        refresh = "40fc6d62131ad418d899d58ef9f1a1905c88c13a0a",
+        start = "4062e4dd13e2f34d79823b9ad207d4ed44326b9730",
+        status = "4069248148dbff95344b82ad9d140cc22ee603908e",
+        refresh = "40655bc2f66b518036cca1f8ac4bc9a1d2fcb39bc6",
     )
 
     @Volatile
@@ -108,7 +110,10 @@ class MangaArabia : HttpSource() {
         val chapterId = extractChapterId(html) ?: return htmlPages
 
         return try {
-            fetchReaderPages(pageUrl, html, chapterId).ifEmpty { htmlPages }
+            val actionPages = fetchReaderPages(pageUrl, html, chapterId)
+            // Keep whichever list is more complete; the site server-renders
+            // the first few pages and fills the rest through server actions.
+            if (actionPages.size > htmlPages.size) actionPages else htmlPages
         } catch (e: CancellationException) {
             throw e
         } catch (_: Exception) {
@@ -350,9 +355,9 @@ class MangaArabia : HttpSource() {
                 val number = item.optString("number")
                 val title = item.optString("title")
                 val name = if (title.isNotBlank() && !title.equals("Chapter $number", ignoreCase = true)) {
-                    "Ø§Ù„ÙØµÙ„ $number - $title"
+                    "الفصل $number - $title"
                 } else {
-                    "Ø§Ù„ÙØµÙ„ $number"
+                    "الفصل $number"
                 }
 
                 chapters.add(

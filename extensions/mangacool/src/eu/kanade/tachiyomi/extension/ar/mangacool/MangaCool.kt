@@ -32,7 +32,8 @@ class MangaCool : HttpSource() {
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
 
     // Client-side proof salt used by the reader before requesting page images.
-    private val proofSalt = "137d078c1fc620cff2e95d84b27c4071025ceca97c6cd2d5"
+    // Rotated by the site on 2026-11-28.
+    private val proofSalt = "7799dea0f3e708c8440f3b3a601d356401f16be1ee470f8e"
 
     private val apiHeaders: Headers by lazy {
         headers.newBuilder()

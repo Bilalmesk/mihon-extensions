@@ -49,9 +49,9 @@ class MangaArabi : HttpSource() {
     )
 
     private val defaultReaderActions = ReaderActions(
-        start = "4043df9a364067ee6d8f45a4c50cfb94b5837553d2",
-        status = "40504d79d6b905c30e825a7cd81cf777518c4964a3",
-        refresh = "40bc538c2d6a940b36b10b9238ba627408bf089eb6",
+        start = "4062e4dd13e2f34d79823b9ad207d4ed44326b9730",
+        status = "4069248148dbff95344b82ad9d140cc22ee603908e",
+        refresh = "40655bc2f66b518036cca1f8ac4bc9a1d2fcb39bc6",
     )
 
     @Volatile
@@ -108,7 +108,10 @@ class MangaArabi : HttpSource() {
         val chapterId = extractChapterId(html) ?: return htmlPages
 
         return try {
-            fetchReaderPages(pageUrl, html, chapterId).ifEmpty { htmlPages }
+            val actionPages = fetchReaderPages(pageUrl, html, chapterId)
+            // Keep whichever list is more complete; the site server-renders
+            // the first few pages and fills the rest through server actions.
+            if (actionPages.size > htmlPages.size) actionPages else htmlPages
         } catch (e: CancellationException) {
             throw e
         } catch (_: Exception) {
